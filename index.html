@@ -11,7 +11,7 @@ var wiki = {
         HelpPageName : 'Help',
         IndexPageName : 'Index',
         BackupPageName : 'Backup',
-        WikiPattern : '(([A-Z][a-z]+([A-Z][a-z]+)+)|(0-9{4}/[0-9]{1,2}(/[0-9]{1,2})?))',
+        WikiPattern : '(([A-Z][a-z]+([A-Z][a-z]+)+)|([0-9]{4}/[0-9]{1,2}(/[0-9]{1,2})?))',
         URLPattern : '(mailto|http|https|ftp):[\x21-\x7E]*',
         getLinkPattern : function() {
             return new RegExp('(' + this.URLPattern + ')|(' + this.WikiPattern + ')', 'g');
@@ -57,7 +57,7 @@ var wiki = {
                 if (wiki.db.exists(wiki.config.HomePageName)) {
                     wiki.openHomePage();
                 } else {
-                    wiki.openHelpPage();
+                    wiki.openHelpPage(); // welcome
                 }
                 break;
             case wiki.config.HelpPageName:
