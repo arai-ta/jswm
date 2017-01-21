@@ -3,74 +3,23 @@
 <head>
 <meta charset="utf-8">
 <script>
-/*
-JSWikiMini Version 2.0.0
--1.0.0  初版。IE(ActiveX)専用。
--1.1.0  MVC構造にした。グローバル変数を１つにした。
--1.1.1  HTMLとJSを完全に分離した。
--1.2.2  グローバル変数を一つにした。
--2.0.0  localStorage対応。Helpを内蔵した。
-*/
+'use strict';
 var wiki = {
     config : {
         HomePageName : 'FrontPage',
         EditPageName : 'Edit',
         HelpPageName : 'Help',
         IndexPageName : 'Index',
-        WikiPattern : '([A-Z][a-z]+([A-Z][a-z]+)+)',
+        BackupPageName : 'Backup',
+        WikiPattern : '(([A-Z][a-z]+([A-Z][a-z]+)+)|(0-9{4}/[0-9]{1,2}(/[0-9]{1,2})?))',
         URLPattern : '(mailto|http|https|ftp):[\x21-\x7E]*',
-        HelpContent : '【jsWikiMiniとは？】\n\
-　jsWikiMiniは、オープンソースのWikiツールです。\n\
-　YukiWikiMini1.0.2をJavaScriptで再実装したものです。\n\
-\n\
-　使い方は、YukiWikiMiniとほぼ同じです。\n\
-　IEで使う場合は、index.htmlをローカルに保存して使います。\n\
-\n\
-【使い方】\n\
-　・FooBarのような形の単語を書くと、そこから新しいページを作ることができます。\n\
-　・URLを書くと自動でリンクが張られます。\n\
-　・ページを消したいときは中身を空にして保存します。\n\
-\n\
-【特徴】\n\
-　・インストール不要、サーバ不要\n\
-　　　面倒なインストールは必要ありません。\n\
-　　　index.htmlファイル一つだけで動きます。\n\
-　　　USBメモリや共有フォルダに置いても(たぶん)動きます。\n\
-　・超高速\n\
-　　　サーバとの通信が行われないので動作が軽快・高速です。\n\
-\n\
-【動作環境】\n\
- 　・IE6,7,8,9, Firefox, Chrome, Safari\n\
-　\n\
-【ライセンス】\n\
-　・Perlと同じライセンスに準じます。\n\
-',
-
-       /** 日本語に特化するなら下記のようにする。 */
-       /*
-        HomePageName : 'トップページ',
-        EditPageName : '編集',
-        HelpPageName : 'Help',
-        IndexPageName : 'ページ一覧',
-        WikiPattern : '<(.+)>',
-        URLPattern : '((mailto|http|https|ftp):[\x21-\x7E]*)',
-       */
-
         getLinkPattern : function() {
             return new RegExp('(' + this.URLPattern + ')|(' + this.WikiPattern + ')', 'g');
         }
     },
 
     main : function() {
-        var _this = this;
-
-        if(typeof ActiveXObject === 'undefined') {
-           // not IE
-           this.db = this.db_localStorage;
-        } else {
-           // IE
-           this.db = this.db_file;
-        }    
+        this.db = this.db_localStorage;
 
         var ret = this.db.init();
         if (!ret) {
@@ -79,35 +28,61 @@ var wiki = {
 
         this.view.init(this.config);
 
-        this.view._id('linkToHomePage').onclick = function(){
-            _this.openHomePage();
-            return false;
+        this.view._id('linkToEditPage').onclick = this.editCurrentPage;
+
+        this.view._id('current').ondblclick = function(e){
+            if (!! wiki.view._id('textarea')) {
+                return;
+            }
+            wiki.editCurrentPage();
         };
 
-        this.view._id('linkToEditPage').onclick = function(){
-            _this.editCurrentPage();
-            return false;
-        };
+        window.onhashchange = function() {
+            wiki.navigate();
+        }
 
-        this.view._id('linkToIndexPage').onclick = function(){
-            _this.showIndexPage();
-            return false;
-        };
+        this.navigate();
+    },
 
-        this.view._id('linkToHelpPage').onclick = function(){
-            _this.openHelpPage();
-            return false;
-        };
 
-        this.openHomePage();
+    getHashPage: function() {
+        return location.hash.substr(1);
+    }
+
+    navigate: function() {
+        var pagename = wiki.getHashPage();
+        switch (pagename) {
+            case wiki.config.HomePageName:
+            case '': // no hash
+                if (wiki.db.exists(wiki.config.HomePageName)) {
+                    wiki.openHomePage();
+                } else {
+                    wiki.openHelpPage();
+                }
+                break;
+            case wiki.config.HelpPageName:
+                wiki.openHelpPage();
+                break;
+            case wiki.config.IndexPageName:
+                wiki.showIndexPage();
+                break;
+            case wiki.config.BackupPageName:
+                wiki.openBackupPage();
+                break;
+            default:
+                wiki.openPage(pagename);
+                break;
+        }
+        return false;
     },
 
     openPage : function(pagename){
         this.view.setPageTitle(pagename);
         this.view.showEditLink();
+        this.view.setDateLink(pagename);
 
         if(! this.db.exists(pagename) ){
-            this.view.setContent('');
+            this.editPage(pagename);
         }else{
             var content = this.db.read(pagename);
             content = content.replace(this.config.getLinkPattern(), this.makeLink );
