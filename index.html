@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<script>
+/*
+JSWikiMini Version 2.0.0
+-1.0.0  初版。IE(ActiveX)専用。
+-1.1.0  MVC構造にした。グローバル変数を１つにした。
+-1.1.1  HTMLとJSを完全に分離した。
+-1.2.2  グローバル変数を一つにした。
+-2.0.0  localStorage対応。Helpを内蔵した。
+*/
+var wiki = {
+    config : {
+        HomePageName : 'FrontPage',
+        EditPageName : 'Edit',
+        HelpPageName : 'Help',
+        IndexPageName : 'Index',
+        WikiPattern : '([A-Z][a-z]+([A-Z][a-z]+)+)',
+        URLPattern : '(mailto|http|https|ftp):[\x21-\x7E]*',
+        HelpContent : '【jsWikiMiniとは？】\n\
+　jsWikiMiniは、オープンソースのWikiツールです。\n\
+　YukiWikiMini1.0.2をJavaScriptで再実装したものです。\n\
+\n\
+　使い方は、YukiWikiMiniとほぼ同じです。\n\
+　IEで使う場合は、index.htmlをローカルに保存して使います。\n\
+\n\
+【使い方】\n\
+　・FooBarのような形の単語を書くと、そこから新しいページを作ることができます。\n\
+　・URLを書くと自動でリンクが張られます。\n\
+　・ページを消したいときは中身を空にして保存します。\n\
+\n\
+【特徴】\n\
+　・インストール不要、サーバ不要\n\
+　　　面倒なインストールは必要ありません。\n\
+　　　index.htmlファイル一つだけで動きます。\n\
+　　　USBメモリや共有フォルダに置いても(たぶん)動きます。\n\
+　・超高速\n\
+　　　サーバとの通信が行われないので動作が軽快・高速です。\n\
+\n\
+【動作環境】\n\
+ 　・IE6,7,8,9, Firefox, Chrome, Safari\n\
+　\n\
+【ライセンス】\n\
+　・Perlと同じライセンスに準じます。\n\
+',
+
+       /** 日本語に特化するなら下記のようにする。 */
+       /*
+        HomePageName : 'トップページ',
+        EditPageName : '編集',
+        HelpPageName : 'Help',
+        IndexPageName : 'ページ一覧',
+        WikiPattern : '<(.+)>',
+        URLPattern : '((mailto|http|https|ftp):[\x21-\x7E]*)',
+       */
+
+        getLinkPattern : function() {
+            return new RegExp('(' + this.URLPattern + ')|(' + this.WikiPattern + ')', 'g');
+        }
+    },
+
+    main : function() {
+        var _this = this;
+
+        if(typeof ActiveXObject === 'undefined') {
+           // not IE
+           this.db = this.db_localStorage;
+        } else {
+           // IE
+           this.db = this.db_file;
+        }    
+
+        var ret = this.db.init();
+        if (!ret) {
+            return;
+        }
+
+        this.view.init(this.config);
+
+        this.view._id('linkToHomePage').onclick = function(){
+            _this.openHomePage();
+            return false;
+        };
+
+        this.view._id('linkToEditPage').onclick = function(){
+            _this.editCurrentPage();
+            return false;
+        };
+
+        this.view._id('linkToIndexPage').onclick = function(){
+            _this.showIndexPage();
+            return false;
+        };
+
+        this.view._id('linkToHelpPage').onclick = function(){
+            _this.openHelpPage();
+            return false;
+        };
+
+        this.openHomePage();
+    },
+
+    openPage : function(pagename){
+        this.view.setPageTitle(pagename);
+        this.view.showEditLink();
+
+        if(! this.db.exists(pagename) ){
+            this.view.setContent('');
+        }else{
+            var content = this.db.read(pagename);
+            content = content.replace(this.config.getLinkPattern(), this.makeLink );
+            this.view.setContent("<pre>" + content + "</pre>");
+        }
+    },
+
+    openHomePage : function(){
+        this.openPage(this.config.HomePageName);
+        return false;
+    },
+
+    openHelpPage : function (){
+        var pagename = this.config.HelpPageName;
+        this.view.setPageTitle(pagename);
+        this.view.hideEditLink();
+
+        var content = this.config.HelpContent;
+        content = content.replace(this.config.getLinkPattern(), this.makeLink );
+        this.view.setContent("<pre>" + content + "</pre>");
+
+        return false;
+    },
+
+    editCurrentPage : function (){
+        this.editPage(this.view.getCurrentPageName());
+        return false;
+    },
+
+    showIndexPage : function (){
+        this.view.setPageTitle(this.config.IndexPageName);
+        this.view.hideEditLink();
+
+        var PageNames = this.db.keys();
+
+        this.view.renderIndexPage(PageNames);
+        return false;
+    },
+
+    savePage : function (pagename){
+
+        var content = this.view.getInputValue();
+        
+        if (content) {
+            this.db.save(pagename, content);
+            this.openPage(pagename);
+        } else {
+            var ret = this.db.remove(pagename);
+            this.openHomePage();
+            return false;
+        }
+        
+        return false;
+    },
+
+    editPage : function(pagename) {
+
+        this.view.setPageTitle(pagename);
+
+        var content = '';
+
+        if( this.db.exists(pagename) ){
+            content = this.db.read(pagename);
+        }
+
+        this.view.renderInputForm(pagename, content);
+    },
+
+    makeLink : function($0,$1,$2){
+        var _this = wiki;
+        var matched = $0;
+        var link;
+
+        if(matched.match(_this.config.WikiPattern)){
+            pagename = RegExp.$1;
+
+            if(_this.db.exists(pagename)){
+                link = "<a href='javascript:wiki.openPage(\""
+                     + pagename
+                     + "\");'>" + pagename + "</a>";
+
+            } else {
+                link = pagename + "<a href='javascript:wiki.editPage(\"" + pagename + "\")' title='create a Page'>?</a>";
+                
+            }
+        }else{
+            //URLとマッチした場合
+            link = "<a href='" + matched + "'>" + matched + "</a>";
+        }
+        
+        return link;
+    }
+}; // wiki
+
+//============  Storage Object ===================
+//===== localStorage  ======    
+wiki.db_localStorage = {
+    init : function() {return true;},
+    exists : function(pagename){
+        return pagename in localStorage;
+    },
+    read : function(pagename) {
+        return localStorage.getItem(pagename);
+    },
+    keys : function(){
+        var ret = [];
+        for (var i = 0; i < localStorage.length; i++) {
+            ret.push(localStorage.key(i));
+        }
+        return ret;
+    },
+    save : function(pagename, content){
+        localStorage.setItem(pagename, content);
+    },
+
+    remove : function(pagename) {
+        localStorage.removeItem(pagename);
+    }
+};    
+//===== file storage  ======    
+wiki.db_file = {
+    _fso : null,
+    _regExtension : /\.txt$/i,
+
+    init : function() {
+        try{
+            this._fso = new ActiveXObject("Scripting.FileSystemObject");
+            return true;
+        }catch(e){
+            var str = "" //"エラー:\r\n" + e.message + "\r\n\r\n"
+                   + "ActiveXを実行できませんでした。下記を試してみてください。\r\n\r\n"
+                   + "・このHTMLファイルをダウンロードした上で、右クリックして、「ブロックの解除」をする。\r\n"
+                   + "・ブラウザのインターネットオプション＞セキュリティ＞イントラネット＞レベルのカスタマイズでActiveXの実行を許可する。\r\n"
+                   + "\r\n"
+                   + "(本ソフトウェアのご利用は自己責任でお願いします。)"
+
+            alert(str);
+            return false;
+        }
+
+    },
+
+    read : function(pagename) {
+        var file = this._fso.openTextFile(this._getPagePath(pagename));
+        var content = file.readAll();
+        file.Close();
+        return content;
+    },
+
+    exists : function(pagename) {
+        var filepath = this._getPagePath(pagename);
+        return this._fso.fileExists(filepath);
+    },
+
+    keys : function() {
+        var TextFiles = this._getFiles(this._getBaseFolder(), this._regExtension);
+        var PageNames = [];
+        for(var i in TextFiles){
+            PageNames.push(this._fso.getBaseName(TextFiles[i]));
+        }
+        return PageNames;
+    },
+
+    save : function(pagename, content) {
+        var file = this._fso.createTextFile(this._getPagePath(pagename));
+        file.write(content);
+        file.Close();
+        return;
+    },
+
+    remove : function(pagename) {
+        if(this.exists(pagename)){
+            this._fso.deleteFile(this._getPagePath(pagename));
+            return true;
+        }else{
+            return false;
+        }
+    },
+
+    _getPagePath : function(pagename) {
+        return this._getBaseFolder().Path + "\\" +  pagename + ".txt";
+    },
+
+    _getFiles : function (objFolder, filter) {
+       var objEnu = new Enumerator(objFolder.Files);
+       var files = [];
+       for (; !objEnu.atEnd(); objEnu.moveNext() ){
+           if(objEnu.item().Name.match(filter)){
+       files.push(objEnu.item());
+           }
+       }
+       return files;
+    },
+
+    _getBaseFolder : function() {
+        var BaseURL = location.href;
+        var FullPath = BaseURL.replace(/file:\/\/\//, "").replace(/file:\/\//,"//").replace(/%20/g, " ");
+
+        if(this._fso.fileExists(FullPath)){
+          var thisFile = this._fso.getFile(FullPath);
+        }else{
+          alert('File not Exists:' + FullPath);
+        }
+        return thisFile.parentFolder;
+    }
+
+};// db
+
+//============  View Object ===================
+wiki.view = {
+
+    init : function(config) {
+        this._id("linkToHomePage").innerText = config.HomePageName;
+        this._id("linkToIndexPage").innerText = config.IndexPageName;
+        this._id("linkToEditPage").innerText  = config.EditPageName;
+    },
+
+    setPageTitle : function(pagename) {
+        document.title = pagename;
+        this._id("headerH1").innerText = pagename;
+    },
+
+    showEditLink : function() {
+        this._id("editLink").style.display = "inline";
+    },
+
+    hideEditLink : function() {
+        this._id("editLink").style.display = "none";
+    },
+
+    _id : function (id) {
+        return document.getElementById(id);
+    },
+
+    setContent : function(html) {
+        this._id('content').innerHTML = html;
+    },
+
+    getCurrentPageName : function() {
+        return document.title;
+    },
+
+    getInputValue : function() {
+        return this._id('textarea').value;
+    },
+
+    renderInputForm : function(pagename, content) {
+        var html =
+           "<form onsubmit='wiki.savePage(\"" + pagename + "\"); return false;'>"
+         + "<input type='submit' value='save'><br />"
+         + "<textarea cols='80' rows='20' id='textarea' wrap='off'>" + content + "</textarea><br />"
+         + "<input type='submit' value='save'><br />"
+         + "</form>";
+
+        this.setContent(html);
+    },
+
+    renderIndexPage : function(pagenames) {
+        var links = [];
+        for(var i in pagenames){
+            var li = "<li><a href='javascript:wiki.openPage(\""+pagenames[i]+"\");'>" + pagenames[i] + "</a></li>";
+            links.push(li);
+        }
+        this.setContent("<ul>" + links.join("") + "</ul>");
+    }
+};
+
+window.onload = function(){ wiki.main(); };
+</script>
+<style>
+body { font-family: "Courier New", monospace; }
+pre { line-height:130%; }
+a { text-decoration: none }
+a:hover { text-decoration: underline }
+table { width:100%; border:none; }
+</style>
+    </head>
+    <body>
+        <table>
+            <tr valign="top">
+                <td>
+                    <h1 id="headerH1"></h1>
+                </td>
+                <td align="right">
+                    <a id="linkToHomePage" href="#">Blank</a> | 
+                    <span id="editLink"><a id="linkToEditPage" href="#">Blank</a> | </span>
+                    <a id="linkToIndexPage" href="#">Blank</a> | 
+                    <a id="linkToHelpPage" href="#">Help</a> | 
+                </td>
+            </tr>
+        </table>
+    <div id="content"></div>
+    </body>
+</html>
