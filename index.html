@@ -324,6 +324,16 @@ wiki.view = {
         }
     },
 
+    _dayCalc : function(dateExpr, dateOper) {
+        var d = new Date(dateExpr);
+        d.setDate(d.getDate() + dateOper || 0);
+        return [
+            d.getFullYear(),
+            ("0" + (d.getMonth()+1)).slice(-2),
+            ("0" + d.getDate()).slice(-2)
+        ].join('/');
+    },
+
     hideEditLink : function() {
         this._id("editLink").style.display = "none";
     },
@@ -346,22 +356,58 @@ wiki.view = {
 
     renderInputForm : function(pagename, content) {
         var html =
-           "<form onsubmit='wiki.savePage(\"" + pagename + "\"); return false;'>"
-         + "<input type='submit' value='save'><br />"
-         + "<textarea cols='80' rows='20' id='textarea' wrap='off'>" + content + "</textarea><br />"
+           "<form id='textform' onsubmit='wiki.savePage(\"" + pagename + "\"); return false;'>"
+         + "<input type='submit' value='save'>&nbsp;"
+         + "<input type='button' value='cancel' onclick='wiki.editCancel(\""+pagename+"\");'><br />"
+         + "<textarea id='textarea' wrap='off'></textarea><br />"
          + "<input type='submit' value='save'><br />"
          + "</form>";
 
         this.setContent(html);
+        var area = this._id('textarea');
+        area.focus();
+        area.value = content;
     },
 
-    renderIndexPage : function(pagenames) {
+    _e : function(str) {
+        var node;
+        if (str instanceof HTMLElement) {
+            node = str;
+        } else if (typeof str === 'string') {
+            node = document.createTextNode(str);
+        } else {
+            throw new Error('Error: invalid argument:' + str);
+        }
+        var wrapper = document.createElement('div');
+        wrapper.appendChild(node);
+        return wrapper.innerHTML;
+    },
+
+    renderIndexPage : function(pairs, prevKeyword) {
         var links = [];
-        for(var i in pagenames){
-            var li = "<li><a href='javascript:wiki.openPage(\""+pagenames[i]+"\");'>" + pagenames[i] + "</a></li>";
+        for(var k in pairs) {
+            if (! pairs.hasOwnProperty(k)) {
+                continue;
+            } else if (k == wiki.config.IndexPageName) {
+                continue;
+            }
+            var li = "<li class='search-index'>"
+                + "<a href='#" + k + "'>" + k + "</a>"
+                + "<!-- " this._e((k + pairs[k]).toLowerCase()) + " -->"
+                + "</li>";
             links.push(li);
         }
-        this.setContent("<ul>" + links.join("") + "</ul>");
+
+        var html = "<input type='text' id='search' placeholder='search...' "
+            + "oninput='wiki.searchPage(this.value);' "
+            + "onchange='wiki.storeSearchKeyword(this.value);' "
+            + "style='float:right' accessKey='/'>"
+            + "<ul id='index'>" + links.join("") + "</ul>";
+        this.setContent(html);
+        var s = this._id('search');
+        s.value = prevKeyword;
+        s.dispatchEvent(new Event('input'));
+        s.select();
     }
 };
 
