@@ -207,8 +207,42 @@ var wiki = {
 
     getStoredKeyword : function() {
         return wiki.db.read(wiki.config.IndexPageName);
-    }
+    },
 
+    selectRestoreFile : function() {
+        this.view._id('restore').click();
+        return false;
+    },
+
+    restoreBackup : function() {
+        var file = this.view._id('restore').files[0];
+        var fr = new FileReader();
+        fr.onload = function() {
+            try {
+                var data = JSON.parse(fr.result);
+                if (confirm('Are you sure?')) {
+                    wiki.db.restore(data);
+                } else {
+                    // debugging
+                    console.log(fr.result === wiki.db.dump());
+                    for (var k in data)
+                        if (data[k] !== wiki.db.read(k))
+                            console.log('data <-> db differ:' + k);
+                    var keys = wiki.db.keys();
+                    for (var k, i = 0; i < keys.length; i++) {
+                        k = keys[i];
+                        if (data[k] !== wiki.db.read(k))
+                            console.log('db <-> data differ:' + k);
+                    }
+                    debugger;
+                }
+            } catch(e) {
+                console.error(e);
+                alert('restore error:' + e);
+            }
+        }
+        fr.readAsText(file);
+    }
 }; // wiki
 
 //============  Storage Object ===================
@@ -231,107 +265,39 @@ wiki.db_localStorage = {
     save : function(pagename, content){
         localStorage.setItem(pagename, content);
     },
-
     remove : function(pagename) {
         localStorage.removeItem(pagename);
+    },
+    dump : function() {
+        return JSON.stringify(localStorage);
+    },
+    restore : function(obj) {
+        localStorage.clear();
+        for (var page in obj) {
+            if (obj.hasOwnProperty(page)) {
+                this.save(page, obj[page]);
+            }
+        }
+    },
+    pairs : function() {
+        return JSON.parse(this.dump());
     }
-};    
-//===== file storage  ======    
-wiki.db_file = {
-    _fso : null,
-    _regExtension : /\.txt$/i,
-
-    init : function() {
-        try{
-            this._fso = new ActiveXObject("Scripting.FileSystemObject");
-            return true;
-        }catch(e){
-            var str = "" //"エラー:\r\n" + e.message + "\r\n\r\n"
-                   + "ActiveXを実行できませんでした。下記を試してみてください。\r\n\r\n"
-                   + "・このHTMLファイルをダウンロードした上で、右クリックして、「ブロックの解除」をする。\r\n"
-                   + "・ブラウザのインターネットオプション＞セキュリティ＞イントラネット＞レベルのカスタマイズでActiveXの実行を許可する。\r\n"
-                   + "\r\n"
-                   + "(本ソフトウェアのご利用は自己責任でお願いします。)"
-
-            alert(str);
-            return false;
-        }
-
-    },
-
-    read : function(pagename) {
-        var file = this._fso.openTextFile(this._getPagePath(pagename));
-        var content = file.readAll();
-        file.Close();
-        return content;
-    },
-
-    exists : function(pagename) {
-        var filepath = this._getPagePath(pagename);
-        return this._fso.fileExists(filepath);
-    },
-
-    keys : function() {
-        var TextFiles = this._getFiles(this._getBaseFolder(), this._regExtension);
-        var PageNames = [];
-        for(var i in TextFiles){
-            PageNames.push(this._fso.getBaseName(TextFiles[i]));
-        }
-        return PageNames;
-    },
-
-    save : function(pagename, content) {
-        var file = this._fso.createTextFile(this._getPagePath(pagename));
-        file.write(content);
-        file.Close();
-        return;
-    },
-
-    remove : function(pagename) {
-        if(this.exists(pagename)){
-            this._fso.deleteFile(this._getPagePath(pagename));
-            return true;
-        }else{
-            return false;
-        }
-    },
-
-    _getPagePath : function(pagename) {
-        return this._getBaseFolder().Path + "\\" +  pagename + ".txt";
-    },
-
-    _getFiles : function (objFolder, filter) {
-       var objEnu = new Enumerator(objFolder.Files);
-       var files = [];
-       for (; !objEnu.atEnd(); objEnu.moveNext() ){
-           if(objEnu.item().Name.match(filter)){
-       files.push(objEnu.item());
-           }
-       }
-       return files;
-    },
-
-    _getBaseFolder : function() {
-        var BaseURL = location.href;
-        var FullPath = BaseURL.replace(/file:\/\/\//, "").replace(/file:\/\//,"//").replace(/%20/g, " ");
-
-        if(this._fso.fileExists(FullPath)){
-          var thisFile = this._fso.getFile(FullPath);
-        }else{
-          alert('File not Exists:' + FullPath);
-        }
-        return thisFile.parentFolder;
-    }
-
-};// db
+};
 
 //============  View Object ===================
 wiki.view = {
 
     init : function(config) {
-        this._id("linkToHomePage").innerText = config.HomePageName;
-        this._id("linkToIndexPage").innerText = config.IndexPageName;
-        this._id("linkToEditPage").innerText  = config.EditPageName;
+        this._id("linkToHomePage").innerText   = config.HomePageName;
+        this._id("linkToEditPage").innerText   = config.EditPageName;
+        this._id("linkToIndexPage").innerText  = config.IndexPageName;
+        this._id("linkToHelpPage").innerText   = config.HelpPageName;
+        this._id("linkToBackupPage").innerText = config.BackupPageName;
+
+        this._id('linkToHomePage').href   += config.HomePageName;
+        this._id('linkToIndexPage').href  += config.IndexPageName;
+        this._id('linkToHelpPage').href   += config.HelpPageName;
+        this._id('linkToBackupPage').href += config.BackupPageName;
     },
 
     setPageTitle : function(pagename) {
@@ -340,7 +306,22 @@ wiki.view = {
     },
 
     showEditLink : function() {
-        this._id("editLink").style.display = "inline";
+        this._id("editLink").style.display = "";
+    },
+
+    showDateLink : function(pagename) {
+        var date = new Date(pagename),
+            prev = this._id('prevPage'),
+            next = this._id('nextPage');
+        if (isNaN(date.getDate())) {
+            prev.style.display = 'none';
+            next.style.display = 'none';
+        } else {
+            prev.style.display = '';
+            next.style.display = '';
+            prev.href = '#' + this._dayCalc(date, -1);
+            next.href = '#' + this._dayCalc(date, 1);
+        }
     },
 
     hideEditLink : function() {
