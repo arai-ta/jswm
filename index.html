@@ -100,15 +100,27 @@ var wiki = {
         this.view.setPageTitle(pagename);
         this.view.hideEditLink();
 
-        var content = this.config.HelpContent;
+        var content = this.view._id('help').innerText;
         content = content.replace(this.config.getLinkPattern(), this.makeLink );
         this.view.setContent("<pre>" + content + "</pre>");
 
         return false;
     },
 
+    openBackupPage : function() {
+        this.view.setPageTitle(this.config.BackupPageName);
+        this.view.hideEditLink();
+
+        var content = this.db.dump();
+
+        this.view.renderBackupPage(content);
+        return false;
+    },
+
     editCurrentPage : function (){
-        this.editPage(this.view.getCurrentPageName());
+        if (wiki.view._id('editLink').style.display != 'none') {
+            this.editPage(this.view.getCurrentPageName());
+        }
         return false;
     },
 
@@ -116,30 +128,28 @@ var wiki = {
         this.view.setPageTitle(this.config.IndexPageName);
         this.view.hideEditLink();
 
-        var PageNames = this.db.keys();
+        var pairs = this.db.pairs();
 
-        this.view.renderIndexPage(PageNames);
+        this.view.renderIndexPage(pairs, this.getStoredKeyword());
         return false;
     },
 
     savePage : function (pagename){
-
         var content = this.view.getInputValue();
-        
+
         if (content) {
             this.db.save(pagename, content);
             this.openPage(pagename);
         } else {
-            var ret = this.db.remove(pagename);
+            this.db.remove(pagename);
             this.openHomePage();
             return false;
         }
-        
+
         return false;
     },
 
     editPage : function(pagename) {
-
         this.view.setPageTitle(pagename);
 
         var content = '';
@@ -151,30 +161,54 @@ var wiki = {
         this.view.renderInputForm(pagename, content);
     },
 
+    editCancel : function(pagename) {
+        if (this.db.exists(pagename)) {
+            this.navigate();
+        } else {
+            hidstory.back();
+        }
+    },
+
     makeLink : function($0,$1,$2){
         var _this = wiki;
         var matched = $0;
         var link;
 
-        if(matched.match(_this.config.WikiPattern)){
-            pagename = RegExp.$1;
-
+        if(matched.match(_this.config.URLPattern)) {
+            // URLとマッチした場合
+            link = "<a href='" + matched + "' class='ext' target='_blank'>" + matched + "</a>";
+        } else if(matched.match(_this.config.WikiPattern)){
+            // Wikiページっぽい
+            var pagename = RegExp.$1;
             if(_this.db.exists(pagename)){
-                link = "<a href='javascript:wiki.openPage(\""
-                     + pagename
-                     + "\");'>" + pagename + "</a>";
-
+                link = "<a href='#" + pagename + "' class='int' >" + pagename + "</a>";
             } else {
-                link = pagename + "<a href='javascript:wiki.editPage(\"" + pagename + "\")' title='create a Page'>?</a>";
-                
+                link = pagename + "<a href='#" + pagename + "' title='create a Page' class='new'></a>";
             }
-        }else{
-            //URLとマッチした場合
-            link = "<a href='" + matched + "'>" + matched + "</a>";
         }
-        
         return link;
+    },
+
+    searchPage : function(keyword) {
+        this.view.showAllLists();
+        if (! keyword) {
+            return;
+        }
+
+        var words = keyword.split(/[ 　]+/); // 半角スペース+全角スペース
+        for (var i = 0; i < words.length; ++i) {
+            this.view.hideUnmatchedLists(words[i]);
+        }
+    },
+
+    storeSearchKeyword : function(keyword) {
+        wiki.db.save(wiki.config.IndexPageName, keyword);
+    },
+
+    getStoredKeyword : function() {
+        return wiki.db.read(wiki.config.IndexPageName);
     }
+
 }; // wiki
 
 //============  Storage Object ===================
