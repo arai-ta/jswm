@@ -309,7 +309,7 @@ wiki.view = {
         this._id("editLink").style.display = "";
     },
 
-    showDateLink : function(pagename) {
+    setDateLink : function(pagename) {
         var date = new Date(pagename),
             prev = this._id('prevPage'),
             next = this._id('nextPage');
