@@ -490,11 +490,75 @@ Perl と同じ (GPL or Artistic License) です。
 https://github.com/arai-ta/jswm
 </script>
 <style>
+html, body, #content, #textform, #textarea {
+    height: 95%;
+}
+#textarea {
+    width: 100%;
+    margin-top: 5px;
+}
 body { font-family: "Courier New", monospace; }
 pre { line-height:130%; }
-a { text-decoration: none }
+a {
+    text-decoration: none;
+    color: mediumseagreen;
+}
 a:hover { text-decoration: underline }
+/* external link */
+a.ext:after  { content: "^" }
+/* internal link */
+a.int:before { content: "[" }
+a.int:after  { content: "]" }
+/* uncreated wiki page */
+a.new:after  { content: "?" }
 table { width:100%; border:none; }
+code {
+    display: block;
+    margin: 20px;
+    padding: 5px;
+    background-color: #E8E8E8;
+}
+header > h1 {
+    float: left;
+}
+nav {
+    float: right;
+}
+nav > ul > li {
+    display: inline;
+}
+nav > ul > li:before {
+    content: "|";
+    margin: 0 10px 0 0;
+}
+nav > ul > li:first-child:before {
+    content: "";
+}
+article {
+    clear: both;
+}
+@media print {
+    nav {
+        display: none;
+    }
+}
+@media (max-width: 700px) {
+    nav > ul {
+        text-align: right;
+        list-style: none;
+    }
+    nav > ul > li {
+        display: list-item;
+        margin: 0;
+    }
+    nav > ul > li:before {
+        content: "";
+    }
+}
+#content dl {
+    white-space: initial;
+    padding-left: 20px;
+}
 </style>
     </head>
     <body>
