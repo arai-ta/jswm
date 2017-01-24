@@ -30,7 +30,7 @@ var wiki = {
 
         this.view._id('linkToEditPage').onclick = this.editCurrentPage;
 
-        this.view._id('current').ondblclick = function(e){
+        this.view._id('content').ondblclick = function(e){
             if (!! wiki.view._id('textarea')) {
                 return;
             }
@@ -47,7 +47,7 @@ var wiki = {
 
     getHashPage: function() {
         return location.hash.substr(1);
-    }
+    },
 
     navigate: function() {
         var pagename = wiki.getHashPage();
@@ -119,7 +119,7 @@ var wiki = {
 
     editCurrentPage : function (){
         if (wiki.view._id('editLink').style.display != 'none') {
-            this.editPage(this.view.getCurrentPageName());
+            wiki.editPage(wiki.view.getCurrentPageName());
         }
         return false;
     },
@@ -393,7 +393,7 @@ wiki.view = {
             }
             var li = "<li class='search-index'>"
                 + "<a href='#" + k + "'>" + k + "</a>"
-                + "<!-- " this._e((k + pairs[k]).toLowerCase()) + " -->"
+                + "<!-- " + this._e((k + pairs[k]).toLowerCase()) + " -->"
                 + "</li>";
             links.push(li);
         }
