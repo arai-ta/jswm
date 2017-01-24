@@ -562,19 +562,23 @@ article {
 </style>
     </head>
     <body>
-        <table>
-            <tr valign="top">
-                <td>
-                    <h1 id="headerH1"></h1>
-                </td>
-                <td align="right">
-                    <a id="linkToHomePage" href="#">Blank</a> | 
-                    <span id="editLink"><a id="linkToEditPage" href="#">Blank</a> | </span>
-                    <a id="linkToIndexPage" href="#">Blank</a> | 
-                    <a id="linkToHelpPage" href="#">Help</a> | 
-                </td>
-            </tr>
-        </table>
-    <div id="content"></div>
+    <header>
+        <h1 id="headerH1"></h1>
+        <nav>
+            <ul>
+                <li><a id="linkToHomePage" accesskey="F" href="#">FrontPage</a></li>
+                <li id="editLink">
+                    <a id="prevPage" class="date-nav" accesskey="p" href="#">&lt;</a>
+                    <a id="linkToEditPage" accesskey="E" href="#">Edit</a>
+                    <a id="nextPage" class="date-nav" accesskey="n" href="#">&gt;</a>
+                    <a accesskey="r" href="#Index" onclick="wiki.storeSearchKeyword(wiki.getHashPage());" style="font-size: smaller">ref</a>
+                </li>
+                <li><a id="linkToIndexPage" accesskey="i" href="#">Index</a></li>
+                <li><a id="linkToHelpPage"  accesskey="H" href="#">Help</a></li>
+                <li><a id="linkToBackupPage" accesskey="b" href="#">Backup</a></li>
+            </ul>
+        </nav>
+    </header>
+    <article id="content"></article>
     </body>
 </html>
