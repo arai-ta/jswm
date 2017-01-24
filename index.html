@@ -408,6 +408,42 @@ wiki.view = {
         s.value = prevKeyword;
         s.dispatchEvent(new Event('input'));
         s.select();
+    },
+
+    showAllLists : function() {
+        this._x('//li[@class="search-index"]').forEach(function(e) {
+            e.style.display = '';
+        });
+    },
+
+    hideUnmatchedLists : function(keyword) {
+        var path = '//li[@class="search-index" and not(contains(comment(), "' + keyword.toLowerCase() + '"))]';
+        this._x(path).forEach(function(e) {
+            e.style.display = 'none';
+        });
+    },
+
+    _x : function(xpath, root) {
+        var r = [], x, node;
+        root = root || document;
+        x = document.evaluate(xpath, root, null, XPathResult.ANY_TYPE, null);
+        while (node = x.iterateNext())
+            r.push(node);
+        return r;
+    },
+
+    renderBackupPage : function(content) {
+        var escaped = content.replace(/ /g, '\\u0020'); // space escape
+        // "<a href='data:application/json;charset=UTF-8,"+escaped+"' download='backup-"+timestamp+".json' >Dump</a>"
+        var a = document.createElement('a');
+        a.setAttribute('href', 'data:application/json;charset=UTF-8,' + escaped);
+        a.setAttribute('download', 'backup-' + Date.now() + '.json');
+        a.innerText = 'Dump';
+
+        var html = this._e(a)
+            + " | <a href='#' onclick='return wiki.selectRestoreFile();'>Restore</a>"
+            + "<input type='file' id='restore' onchange='wiki.restoreBackup();' style='display:none' accept='application/json'>";
+        this.setContent(html);
     }
 };
 
