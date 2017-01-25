@@ -1,13 +1,13 @@
 #!/usr/bin/env make -f
 
 
-test : codecept.phar tests/
+test : vendor/bin/codecept tests/
 
-codecept.phar:
-	curl -LO http://codeception.com/codecept.phar
+vendor/bin/codecept:
+	composer.phar install
 
 tests/:
-	php codecept.phar bootstrap
+	php vendor/bin/codecept bootstrap
 
 server:
 	php -S localhost:9000 > tests/server.log 2>&1 &
