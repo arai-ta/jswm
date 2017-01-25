@@ -56,8 +56,12 @@ var wiki = {
             case '': // no hash
                 if (wiki.db.exists(wiki.config.HomePageName)) {
                     wiki.openHomePage();
+                } else if (wiki.view.getCurrentPageName() == wiki.config.HelpPageName) {
+                    // edit first wiki page
+                    wiki.editPage(pagename);
                 } else {
-                    wiki.openHelpPage(); // welcome
+                    // show welcome page
+                    wiki.openHelpPage();
                 }
                 break;
             case wiki.config.HelpPageName:
