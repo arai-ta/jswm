@@ -1,7 +1,7 @@
 #!/usr/bin/env make -f
 
-
 test : vendor/bin/codecept tests/
+	php vendor/bin/codecept run acceptance --steps
 
 vendor/bin/codecept:
 	composer.phar install
@@ -11,3 +11,4 @@ tests/:
 
 server:
 	php -S localhost:9000 > tests/server.log 2>&1 &
+	vendor/bin/phantomjs --webdriver=4444 > tests/phantom.log 2>&1 &

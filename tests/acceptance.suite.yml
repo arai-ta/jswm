@@ -6,7 +6,10 @@
 
 class_name: AcceptanceTester
 modules:
-    enabled:
-        - PhpBrowser:
+    enabled: [WebDriver]
+    config:
+        WebDriver:
             url: http://localhost:9000
-        - \Helper\Acceptance
+            browser: phantomjs
+            capabilities:
+                javascriptEnabled: true
