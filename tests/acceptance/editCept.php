@@ -22,3 +22,5 @@ $I->seeInCurrentUrl('#FrontPage');
 $I->dontSeeElement('textarea');
 $I->see('Hello, jswm!', '#content');
 
+$I->executeJS('localStorage.clear()');
+
