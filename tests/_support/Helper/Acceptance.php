@@ -7,4 +7,12 @@ namespace Helper;
 class Acceptance extends \Codeception\Module
 {
 
+    // reset localStorage each test
+    public function _before() {
+        #echo "HOOKS!";
+        $I = $this->getModule('WebDriver');
+        $I->amOnPage('/index.html');
+        $I->executeJS('localStorage.clear();');
+    }
+
 }

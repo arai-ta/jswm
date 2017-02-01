@@ -6,7 +6,9 @@
 
 class_name: AcceptanceTester
 modules:
-    enabled: [WebDriver]
+    enabled:
+        - WebDriver
+        - \Helper\Acceptance
     config:
         WebDriver:
             url: http://localhost:9000
