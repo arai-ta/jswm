@@ -17,6 +17,11 @@ $(CODECEPT):
 tests/:
 	$(CODECEPT) bootstrap
 
+# run tests, then push commits
+push:
+	make test
+	git push origin
+
 server:
 	php -S localhost:9000 > tests/server.log 2>&1 &
 	vendor/bin/phantomjs --local-storage-path=/dev/null \
