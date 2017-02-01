@@ -1,4 +1,5 @@
-<?php 
+<?php
+
 $I = new AcceptanceTester($scenario);
 $I->wantTo('Edit a wiki page');
 $I->amOnPage('/index.html');
@@ -21,6 +22,4 @@ $I->see('FrontPage', '//h1');
 $I->seeInCurrentUrl('#FrontPage');
 $I->dontSeeElement('textarea');
 $I->see('Hello, jswm!', '#content');
-
-$I->executeJS('localStorage.clear()');
 
