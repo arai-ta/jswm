@@ -1,11 +1,11 @@
 <?php
 
 $I = new AcceptanceTester($scenario);
-$I->wantTo('Edit a wiki page');
+$I->wantTo('Edit a new wiki page');
 $I->amOnPage('/index.html');
 $I->see('Help', '//h1');
 
-$I->amGoingTo('edit FrontPage');
+$I->amGoingTo('edit FrontPage by new page link');
 $I->click('//a[@class="new" and @href="#FrontPage"]');
 
 $I->expect('Edit form is shown');
