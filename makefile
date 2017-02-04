@@ -3,13 +3,13 @@
 CODECEPT = vendor/bin/codecept
 
 # testcase name : define at runtime parameter
-NAMED =
+NAME =
 
 test: $(CODECEPT) tests/ server
 	$(CODECEPT) run acceptance --steps
 
 newtest: $(CODECEPT) tests/
-	$(CODECEPT) generate:cept acceptance $(NAMED)
+	$(CODECEPT) generate:cept acceptance $(NAME)
 
 $(CODECEPT):
 	composer.phar install
