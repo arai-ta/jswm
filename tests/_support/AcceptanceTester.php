@@ -25,6 +25,14 @@ class AcceptanceTester extends \Codeception\Actor
     */
 
     // page creation shorthand
+    public function createFirstWikiPage($content) {
+        $this->amOnPage('/');
+        $this->click('//a[@class="new" and @href="#FrontPage"]');
+        $this->fillField('#textarea', $content);
+        $this->click('save');
+    }
+
+    // page creation shorthand
     public function createWikiPage($name, $content) {
         $this->amOnPage('/#'.$name);
         $this->fillField('#textarea', $content);

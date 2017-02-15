@@ -5,9 +5,7 @@ $I->wantTo('backup wiki data as jsonfile.');
 $I->amOnPage('/index.html');
 
 $I->amGoingTo('create data');
-$I->click('//a[@class="new" and @href="#FrontPage"]');
-$I->fillField('#textarea', 'Hello,Backup!!');
-$I->click('save');
+$I->createFirstWikiPage('Hello,Backup!!');
 $I->createWikiPage('FooPage', 'This page   contains consecutive spaces.');
 $I->createWikiPage('BarPage', 'This page contains multibyte string. こんにちは。');
 $I->createWikiPage('QuxPage', 'contains '."\n".'newline.');
